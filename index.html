@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking System (Cars & Bikes)</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom right, #0d6efd, #48cae4);
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      text-align: center;
+      padding: 1rem;
+      font-size: 2rem;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .container {
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .parking-section {
+      margin-top: 30px;
+    }
+
+    .parking-title {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .parking-lot {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 20px auto;
+      max-width: 650px;
+    }
+
+    .parking-spot {
+      width: 100%;
+      background-color: #28a745;
+      color: white;
+      border-radius: 8px;
+      font-weight: bold;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease, background-color 0.3s ease;
+    }
+
+    .parking-spot.occupied {
+      background-color: #dc3545;
+    }
+
+    .parking-spot button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      background-color: white;
+      color: #333;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .parking-spot button:hover {
+      background-color: #f0f0f0;
+    }
+
+    .info {
+      font-size: 1.2rem;
+      margin-top: 20px;
+    }
+
+    .receipt {
+      margin-top: 20px;
+      padding: 15px;
+      background: #ffffff;
+      color: #000;
+      border-radius: 8px;
+      display: inline-block;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .payment-button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      background-color: #ffc107;
+      color: #333;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .payment-button:hover {
+      background-color: #e0a800;
+    }
+  </style>
+</head>
+<body>
+  <header>🚗 Smart Parking System (Cars & Bikes) 🚲</header>
+  <div class="container">
+    <!-- Car Parking Section -->
+    <div class="parking-section" id="car-section">
+      <div class="parking-title">Car Parking (₹50 per spot)</div>
+      <div class="info">Available spots: <span id="car-available-spots">5</span></div>
+      <div class="info">Total Revenue: ₹<span id="car-revenue">0</span></div>
+      <div class="parking-lot" id="car-parking-lot"></div>
+    </div>
+
+    <!-- Bike Parking Section -->
+    <div class="parking-section" id="bike-section">
+      <div class="parking-title">Bike Parking (₹25 per spot)</div>
+      <div class="info">Available spots: <span id="bike-available-spots">5</span></div>
+      <div class="info">Total Revenue: ₹<span id="bike-revenue">0</span></div>
+      <div class="parking-lot" id="bike-parking-lot"></div>
+    </div>
+
+    <div id="receipt-container"></div>
+  </div>
+
+  <script>
+    const carSpots = 5;
+    const bikeSpots = 5;
+    let carOccupied = 0;
+    let bikeOccupied = 0;
+    let carRevenue = 0;
+    let bikeRevenue = 0;
+
+    const carParkingLot = document.getElementById('car-parking-lot');
+    const bikeParkingLot = document.getElementById('bike-parking-lot');
+
+    const carAvailableSpots = document.getElementById('car-available-spots');
+    const bikeAvailableSpots = document.getElementById('bike-available-spots');
+
+    const carRevenueText = document.getElementById('car-revenue');
+    const bikeRevenueText = document.getElementById('bike-revenue');
+
+    const receiptContainer = document.getElementById('receipt-container');
+
+    function createSpots(container, total, type, price) {
+      for (let i = 1; i <= total; i++) {
+        const spot = document.createElement('div');
+        spot.className = 'parking-spot';
+        spot.innerHTML = `
+          <div>${type} Spot ${i}</div>
+          <button class="allocate-button">Pay ₹${price} & Allot Spot</button>
+          <button class="remove-button" disabled>Free Spot</button>
+        `;
+
+        container.appendChild(spot);
+
+        const allocateButton = spot.querySelector('.allocate-button');
+        const removeButton = spot.querySelector('.remove-button');
+
+        allocateButton.addEventListener('click', () => {
+          if (!spot.classList.contains('occupied')) {
+            const payNow = confirm(`Confirm payment of ₹${price} for ${type} parking?`);
+
+            if (payNow) {
+              spot.classList.add('occupied');
+              allocateButton.disabled = true;
+              removeButton.disabled = false;
+
+              if (type === 'Car') {
+                carOccupied++;
+                carRevenue += 50;
+                generateReceipt(type, 50);
+              } else {
+                bikeOccupied++;
+                bikeRevenue += 25;
+                generateReceipt(type, 25);
+              }
+              updateStatus();
+            }
+          }
+        });
+
+        removeButton.addEventListener('click', () => {
+          if (spot.classList.contains('occupied')) {
+            spot.classList.remove('occupied');
+            allocateButton.disabled = false;
+            removeButton.disabled = true;
+
+            if (type === 'Car') {
+              carOccupied--;
+            } else {
+              bikeOccupied--;
+            }
+            updateStatus();
+          }
+        });
+      }
+    }
+
+    function updateStatus() {
+      carAvailableSpots.textContent = carSpots - carOccupied;
+      bikeAvailableSpots.textContent = bikeSpots - bikeOccupied;
+      carRevenueText.textContent = carRevenue;
+      bikeRevenueText.textContent = bikeRevenue;
+    }
+
+    function generateReceipt(type, amount) {
+      const receipt = document.createElement('div');
+      receipt.className = 'receipt';
+      receipt.innerHTML = `  
+        <strong>Receipt</strong><br>
+        Vehicle Type: ${type}<br>
+        Amount Paid: ₹${amount}<br>
+        Thank you for using our service!
+      `;
+      receiptContainer.appendChild(receipt);
+
+      setTimeout(() => {
+        receipt.remove();
+      }, 5000); // Automatically remove receipt after 5 seconds
+    }
+
+    createSpots(carParkingLot, carSpots, 'Car', 50);
+    createSpots(bikeParkingLot, bikeSpots, 'Bike', 25);
+
+    updateStatus();
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
